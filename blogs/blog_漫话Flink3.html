@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>bigdata - Blog Page</title>
+<!--
+Classic Template
+http://www.cssmoban.com/tm-488-classic
+-->
+    <!-- load stylesheets -->
+    <link rel="stylesheet" href="http://fonts.useso.com/css?family=Open+Sans:300,400">  <!-- Google web font "Open Sans" -->
+    <link rel="stylesheet" href="../css/bootstrap1.min.css">                                      <!-- Bootstrap style -->
+    <link rel="stylesheet" href="../css/templatemo-style1.css">                                   <!-- Templatemo style -->
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+          <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+          <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+          <![endif]-->
+</head>
+
+    <body>
+       
+        <div class="tm-header">
+            <div class="container-fluid">
+                <div class="tm-header-inner">
+                    <a href="#" class="navbar-brand tm-site-name">漫话Flink(三)</a>
+                    
+                    <!-- navbar -->
+                    <nav class="navbar tm-main-nav">
+
+                        <button class="navbar-toggler hidden-md-up" type="button" data-toggle="collapse" data-target="#tmNavbar">
+                            &#9776;
+                        </button>
+                        
+                        <div class="collapse navbar-toggleable-sm" id="tmNavbar">
+                            <ul class="nav navbar-nav">
+                                <li class="nav-item">
+                                    <a href="../index.html" class="nav-link">Home</a>
+                                </li>
+                            </ul>                        
+                        </div>
+                        
+                    </nav>  
+
+                </div>                                  
+            </div>            
+        </div>
+
+        <div class="tm-blog-img-container">
+            
+        </div>
+
+        <section class="tm-section">
+            <div class="container-fluid">
+                <div class="row">
+
+                    <div class="col-xs-15 col-sm-15 col-md-8 col-lg-12 col-xl-12">
+                        <div class="tm-blog-post">
+                            <h3 class="tm-gold-text"></h3>
+                            <!--<img src="img/timg1.jpg" alt="Image" class="img-fluid tm-img-post">-->
+							
+                            <h3 class="tm-gold-text">任务调度与执行</h3>
+							<img src="img/flink/flink14.jpg" alt="Image" class="img-fluid tm-img-post">
+                            <p>
+							1.当Flink执行executor会自动根据程序代码生成DAG数据流图<br/>
+							2.ActorSystem创建Actor将数据流图发送给JobManager中的Actor<br/>
+							3.JobManager会不断接收TaskManager的心跳消息，从而可以获取到有效的TaskManager<br/>
+							4.JobManager通过调度器在TaskManager中调度执行Task（在Flink中，最小的调度单元就是task，对应就是一个线程）<br/>
+							5.在程序运行过程中，task与task之间是可以进行数据传输的<br/>
+							·Job Client<br/>
+							1.主要职责是提交任务, 提交后可以结束进程, 也可以等待结果返回<br/>
+							2.Job Client 不是 Flink 程序执行的内部部分，但它是任务执行的起点<br/>
+							3.Job Client 负责接受用户的程序代码，然后创建数据流，将数据流提交给 Job Manager 以便进一步执行。 执行完成后，Job Client 将结果返回给用户<br/>
+							JobManager	<br/>
+							1.主要职责是调度工作并协调任务做检查点<br/>
+							2.集群中至少要有一个 master，master 负责调度 task，协调checkpoints 和容错，<br/>
+							3.高可用设置的话可以有多个 master，但要保证一个是 leader, 其他是standby; <br/>
+							4.Job Manager 包含 Actor System、Scheduler、CheckPoint三个重要的组件<br/>
+							5.JobManager从客户端接收到任务以后, 首先生成优化过的执行计划, 再调度到TaskManager中执行<br/>
+							TaskManager<br/>
+							1.主要职责是从JobManager处接收任务, 并部署和启动任务, 接收上游的数据并处理<br/>
+							2.Task Manager 是在 JVM 中的一个或多个线程中执行任务的工作节点。<br/>
+							3.TaskManager在创建之初就设置好了Slot, 每个Slot可以执行一个任务<br/>
+							</p>
+							
+							<h3 class="tm-gold-text"> 任务槽（task-slot）和槽共享（Slot Sharing）</h3>
+							<img src="img/flink/flink15.svg" alt="Image" class="img-fluid tm-img-post">
+                            <p>
+							每个TaskManager是一个JVM的进程, 可以在不同的线程中执行一个或多个子任务。 <br/>
+							为了控制一个worker能接收多少个task。worker通过task slot来进行控制（一个worker至少有一个task slot）。<br/>
+							每个task slot表示TaskManager拥有资源的一个固定大小的子集。 <br/>
+							flink将进程的内存进行了划分到多个slot中。<br/>
+							图中有2个TaskManager，每个TaskManager有3个slot的，每个slot占有1/3的内存。<br/>
+							内存被划分到不同的slot之后可以获得如下好处:<br/>
+							TaskManager最多能同时并发执行的任务是可以控制的，那就是3个，因为不能超过slot的数量。<br/>
+							slot有独占的内存空间，这样在一个TaskManager中可以运行多个不同的作业，作业之间不受影响。<br/>
+							</p>
+							
+							<h3 class="tm-gold-text">槽共享（Slot Sharing）</h3>
+                            <p>
+							默认情况下，Flink允许子任务共享插槽，即使它们是不同任务的子任务，只要它们来自同一个作业。结果是一个槽可以保存作业的整个管道。允许插槽共享有两个主要好处：<br/>
+							只需计算Job中最高并行度（parallelism）的task slot,只要这个满足，其他的job也都能满足。<br/>
+							资源分配更加公平，如果有比较空闲的slot可以将更多的任务分配给它。图中若没有任务槽共享，负载不高的Source/Map等subtask将会占据许多资源，而负载较高的窗口subtask则会缺乏资源。<br/>
+							有了任务槽共享，可以将基本并行度（base parallelism）从2提升到6.提高了分槽资源的利用率。同时它还可以保障TaskManager给subtask的分配的slot方案更加公平。<br/>
+							</p>
+							<img src="img/flink/flink16.svg" alt="Image" class="img-fluid tm-img-post">
+							<h3 class="tm-gold-text">Flink统一的流处理与批处理</h3>
+                            <p>
+							在大数据处理领域，批处理任务与流处理任务一般被认为是两种不同的任务.<br/>
+							一个大数据框架一般会被设计为只能处理其中一种任务<br/>
+							·Storm只支持流处理任务<br/>
+							·MapReduce、Spark只支持批处理任务<br/>
+							·Spark Streaming是Apache Spark之上支持流处理任务的子系统，看似是一个特例，其实并不是——Spark Streaming采用了一种micro-batch的架构，即把输入的数据流切分成细粒度的batch，并为每一个batch数据提交一个批处理的Spark任务，所以Spark Streaming本质上还是基于Spark批处理系统对流式数据进行处理，和Storm等完全流式的数据处理方式完全不同。<br/>
+							·Flink通过灵活的执行引擎，能够同时支持批处理任务与流处理任务<br/>
+							</p>
+							<p>
+							在执行引擎这一层，流处理系统与批处理系统最大不同在于节点间的数据传输方式：<br/>
+							·对于一个流处理系统，其节点间数据传输的标准模型是：<br/>
+							当一条数据被处理完成后，序列化到缓存中，然后立刻通过网络传输到下一个节点，由下一个节点继续处理<br/>
+							·对于一个批处理系统，其节点间数据传输的标准模型是：<br/>
+							当一条数据被处理完成后，序列化到缓存中，并不会立刻通过网络传输到下一个节点，当缓存写满，就持久化到本地硬盘上，当所有数据都被处理完成后，才开始将处理后的数据通过网络传输到下一个节点<br/>
+							这两种数据传输模式是两个极端，对应的是流处理系统对低延迟的要求和批处理系统对高吞吐量的要求<br/>
+							</p>
+							<p>
+							Flink的执行引擎采用了一种十分灵活的方式，同时支持了这两种数据传输模型<br/>
+							Flink以固定的缓存块为单位进行网络数据传输，用户可以通过设置缓存块超时值指定缓存块的传输时机。如果缓存块的超时值为0，则Flink的数据传输方式类似上文所提到流处理系统的标准模型，此时系统可以获得最低的处理延迟<br/>
+							如果缓存块的超时值为无限大，则Flink的数据传输方式类似上文所提到批处理系统的标准模型，此时系统可以获得最高的吞吐量<br/>
+							同时缓存块的超时值也可以设置为0到无限大之间的任意值。缓存块的超时阈值越小，则Flink流处理执行引擎的数据处理延迟越低，但吞吐量也会降低，反之亦然。通过调整缓存块的超时阈值，用户可根据需求灵活地权衡系统延迟和吞吐量<br/>
+							</p>
+							<img src="img/flink/flink17.jpg" alt="Image" class="img-fluid tm-img-post">
+							<h3 class="tm-gold-text">Flink的应用场景</h3>
+							<img src="img/flink/flink18.jpg" alt="Image" class="img-fluid tm-img-post">
+							<p>
+							阿里在Flink的应用主要包含四个模块：实时监控、实时报表、流数据分析和实时仓库。
+							</p>
+							<p>
+							实时监控<br/>
+							用户行为预警、app crash 预警、服务器攻击预警<br/>
+							对用户行为或者相关事件进行实时监测和分析，基于风控规则进行预警<br/>
+							</p>
+							<p>
+							实时报表<br/>
+							双11、双12等活动直播大屏<br/>
+							对外数据产品：生意参谋等<br/>
+							数据化运营<br/>
+							</p>
+							<p>
+							流数据分析:<br/>
+							实时计算相关指标反馈及时调整决策<br/>
+							内容投放、无线智能推送、实时个性化推荐等<br/>
+							</p>
+							<p>
+							实时仓库:<br/>
+							数据实时清洗、归并、结构化<br/>
+							数仓的补充和优化<br/>
+							</p>
+							<h3 class="tm-gold-text">Flink主要的应用场景</h3>
+							<p>
+							场景一：Event-driven Applications【事件驱动】<br>
+							事件驱动型应用是一类具有状态的应用，它从一个或多个事件流提取数据，并根据到来的事件触发计算、状态更新或其他外部动作。<br/>
+							事件驱动型应用是在计算存储分离的传统应用基础上进化而来。<br/>
+							在传统架构中，应用需要读写远程事务型数据库。<br/>
+							相反，事件驱动型应用是基于状态化流处理来完成。在该设计中，数据和计算不会分离，应用只需访问本地（内存或磁盘）即可获取数据。系统容错性的实现依赖于定期向远程持久化存储写入 checkpoint。下图描述了传统应用和事件驱动型应用架构的区别。<br/>
+							</p>
+							<img src="img/flink/flink19.jpg" alt="Image" class="img-fluid tm-img-post">
+							<p>
+							典型的事件驱动类应用<br/>
+							欺诈检测(Fraud detection)<br/>
+							异常检测(Anomaly detection)<br/>
+							基于规则的告警(Rule-based alerting)<br/>
+							业务流程监控(Business process monitoring)<br/>
+							Web应用程序(社交网络)<br/>
+							</p>
+							<p>
+							场景二：Data Analytics Applications【数据分析】<br/>
+							数据分析任务需要从原始数据中提取有价值的信息和指标。<br/>
+							如下图所示，Apache Flink 同时支持流式及批量分析应用。<br/>
+							</p>
+							<img src="img/flink/flink20.jpg" alt="Image" class="img-fluid tm-img-post">
+							<p>
+							Data Analytics Applications包含Batch analytics（批处理分析）和Streaming analytics（流处理分析）。<br/>
+							Batch analytics可以理解为周期性查询：比如Flink应用凌晨从Recorded Events中读取昨天的数据，然后做周期查询运算，最后将数据写入Database或者HDFS，或者直接将数据生成报表供公司上层领导决策使用。<br/>
+							Streaming analytics可以理解为连续性查询：比如实时展示双十一天猫销售GMV，用户下单数据需要实时写入消息队列，Flink 应用源源不断读取数据做实时计算，然后不断的将数据更新至Database或者K-VStore，最后做大屏实时展示。<br/>
+							典型的数据分析应用实例<br/>
+							·电信网络质量监控<br/>
+							·移动应用中的产品更新及实验评估分析<br/>
+							·消费者技术中的实时数据即席分析<br/>
+							·大规模图分析<br/>
+							</p>
+							<p>
+							场景三：Data Pipeline Applications【数据管道】<br/>
+							什么是数据管道？<br/>
+							提取-转换-加载（ETL）是一种在存储系统之间进行数据转换和迁移的常用方法。<br/>
+							ETL 作业通常会周期性地触发，将数据从事务型数据库拷贝到分析型数据库或数据仓库。<br/>
+							数据管道和 ETL 作业的用途相似，都可以转换、丰富数据，并将其从某个存储系统移动到另一个。<br/>	但数据管道是以持续流模式运行，而非周期性触发。因此它支持从一个不断生成数据的源头读取记录，并将它们以低延迟移动到终点。例如：数据管道可以用来监控文件系统目录中的新文件，并将其数据写入事件日志；另一个应用可能会将事件流物化到数据库或增量构建和优化查询索引。<br/>
+							和周期性 ETL 作业相比，持续数据管道可以明显降低将数据移动到目的端的延迟。此外，由于它能够持续消费和发送数据，因此用途更广，支持用例更多。<br/>
+							下图描述了周期性 ETL 作业和持续数据管道的差异。<br/>
+							</p>
+							<img src="img/flink/flink21.jpg" alt="Image" class="img-fluid tm-img-post">
+							<p>
+							Periodic ETL：比如每天凌晨周期性的启动一个Flink ETL Job，读取传统数据库中的数据，然后做ETL，最后写入数据库和文件系统。<br/>
+							Data Pipeline：比如启动一个Flink 实时应用，数据源（比如数据库、Kafka）中的数据不断的通过Flink Data Pipeline流入或者追加到数据仓库（数据库或者文件系统），或者Kafka消息队列。<br/>
+							典型的数据管道应用实例<br/>
+							电子商务中的实时查询索引构建<br/>
+							电子商务中的持续 ETL<br/>
+							</p>
+                        </div>
+                    
+                        
+                    </div>
+
+
+                </div>
+                
+            </div>
+        </section>
+        
+        <footer class="tm-footer">
+            <div class="container-fluid">
+
+            </div>
+        </footer>
+
+        <!-- load JS files -->
+        <script src="js/jquery-1.11.3.min.js"></script>             <!-- jQuery (https://jquery.com/download/) -->
+        <script src="https://www.atlasestateagents.co.uk/javascript/tether.min.js"></script> <!-- Tether for Bootstrap, http://stackoverflow.com/questions/34567939/how-to-fix-the-error-error-bootstrap-tooltips-require-tether-http-github-h --> 
+        <script src="js/bootstrap.min.js"></script>                 <!-- Bootstrap (http://v4-alpha.getbootstrap.com/) -->
+       
+</body>
+</html>
